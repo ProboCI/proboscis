@@ -7,7 +7,7 @@ var through2 = require('through2');
 /**
  * Constructor function.
  */
-var Penelope = function() {
+var Proboscis = function() {
   this.runCommand = this.runCommand.bind(this);
   this.runConfiguredProcesses = this.runConfiguredProcesses.bind(this);
   this.createEventStream = this.createEventStream.bind(this);
@@ -21,27 +21,27 @@ var Penelope = function() {
   this.closeStreamWithLastProcess = true;
   this.setMaxListeners(0);
 };
-util.inherits(Penelope, EventEmitter);
+util.inherits(Proboscis, EventEmitter);
 
 // The hash of running child processes.
-Penelope.prototype.processes = {};
+Proboscis.prototype.processes = {};
 
 // The hash of running streams.
-Penelope.prototype.processStreams = {};
+Proboscis.prototype.processStreams = {};
 
 // The hash of process configurations.
-Penelope.prototype.processConfigs = {};
+Proboscis.prototype.processConfigs = {};
 
 // The unified raw event stream of output (stdout and stderr) from all child
 // processes.
-Penelope.prototype.rawStream = null;
+Proboscis.prototype.rawStream = null;
 
 // The unified event stream of all running subprocesses.
 // Each message is a hash with message content, command, and stream.
-Penelope.prototype.eventStream = null;
+Proboscis.prototype.eventStream = null;
 
 // Whether to close the event stream with the final process.
-Penelope.prototype.closeStreamWithLastProcess = true;
+Proboscis.prototype.closeStreamWithLastProcess = true;
 
 /**
  * Run a command as a child process.
@@ -53,7 +53,7 @@ Penelope.prototype.closeStreamWithLastProcess = true;
  * @param {Object} options Optional hash passed through to child_process.
  * @param {Function} done Optional callback to run when the child process exits.
  */
-Penelope.prototype.runCommand = function(name, command, args, done) {
+Proboscis.prototype.runCommand = function(name, command, args, done) {
 
   // Convert args to an array so that it's easier to work with.
   arguments = Array.prototype.slice.call(arguments, 0);
@@ -98,14 +98,14 @@ Penelope.prototype.runCommand = function(name, command, args, done) {
 /**
  * Return the hash of running child processes.
  */
-Penelope.prototype.getChildren = function() {
+Proboscis.prototype.getChildren = function() {
   return this.processes;
 };
 
 /**
  * Return the currint process configurations.
  */
-Penelope.prototype.getConfig = function(name) {
+Proboscis.prototype.getConfig = function(name) {
   if (name !== undefined) {
     if (this.processConfigs.hasOwnProperty(name)) {
       return this.processConfigs[name];
@@ -118,7 +118,7 @@ Penelope.prototype.getConfig = function(name) {
 /**
  * Add a process configuration.
  */
-Penelope.prototype.addProcess = function(name, command, args, autoStart) {
+Proboscis.prototype.addProcess = function(name, command, args, autoStart) {
   var start = autoStart || true;
   this.processConfigs[name] = {
     name: name,
@@ -131,7 +131,7 @@ Penelope.prototype.addProcess = function(name, command, args, autoStart) {
 /**
  * Run all currently configured processes that are configured to start.
  */
-Penelope.prototype.runConfiguredProcesses = function() {
+Proboscis.prototype.runConfiguredProcesses = function() {
   var i = null;
   var config = null;
   for (i in this.processConfigs) {
@@ -150,7 +150,7 @@ Penelope.prototype.runConfiguredProcesses = function() {
  * @param {string} streamName The name of this stream (e.g. stdout or stderr).
  * @return {stream} A throughstream that wraps string input.
  */
-Penelope.prototype.createEventStream = function(name, command, streamName) {
+Proboscis.prototype.createEventStream = function(name, command, streamName) {
   var _this = this;
   this.processStreams[name + ':' + streamName] = through2.obj(function(data, enc, cb) {
     if (data == '') {
@@ -185,7 +185,7 @@ Penelope.prototype.createEventStream = function(name, command, streamName) {
  *
  * @param {string} name The name of the process that has closed.
  */
-Penelope.prototype.emitEndEvent = function(name) {
+Proboscis.prototype.emitEndEvent = function(name) {
   this.emit('processClosed', name);
   this.emit('processClosed:' + name, name);
   if (Object.keys(this.processes).length === 0) {
@@ -193,4 +193,4 @@ Penelope.prototype.emitEndEvent = function(name) {
   }
 };
 
-module.exports = Penelope;
+module.exports = Proboscis;

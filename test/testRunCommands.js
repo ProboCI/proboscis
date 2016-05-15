@@ -1,5 +1,5 @@
 var should = require('should'),
-  Penelope = require('..'),
+  Proboscis = require('..'),
   es = require('event-stream'),
   path = require('path'),
   async = require('async'),
@@ -9,10 +9,10 @@ var filter = require('./helpers/filter');
 
 var pathToBeeper = path.join(__dirname, 'fixtures', 'beeper.js');
 
-describe('Penelope', function() {
+describe('Proboscis', function() {
   describe('createEventStream', function() {
     it('should return an event stream that decorates events', function() {
-      var runner = new Penelope();
+      var runner = new Proboscis();
       var stream1 = runner.createEventStream('one', 'foo', 'stdout');
       var stream2 = runner.createEventStream('two', 'bar', 'stderr');
       var events = [];
@@ -37,7 +37,7 @@ describe('Penelope', function() {
   describe('runCommand', function() {
     it('should start a subcommand.', function(done) {
       return done();
-      var runner = new Penelope();
+      var runner = new Proboscis();
       runner.eventStream
         .pipe(filter({stream: 'stdout'}))
         .pipe(es.writeArray(function(error, array) {
@@ -52,14 +52,14 @@ describe('Penelope', function() {
       runner.runCommand('one', pathToBeeper, args);
     });
     it('should call a provided callback when a subcommand completes.', function(done) {
-      var runner = new Penelope();
+      var runner = new Proboscis();
       runner.runCommand('foo', pathToBeeper, ['--stdout-message', 'foo'], function(error) {
         should.not.exist(error);
         done();
       });
     });
     it('should call a provided callback with an error if the subcommand exits non-zero.', function(done) {
-      var runner = new Penelope();
+      var runner = new Proboscis();
       var args = [
         '--exit', 2
       ];
@@ -70,7 +70,7 @@ describe('Penelope', function() {
       });
     });
     it('should start multiple subcommands.', function(done) {
-      var runner = new Penelope();
+      var runner = new Proboscis();
       
       async.parallel([
         function(cb) {
@@ -127,7 +127,7 @@ describe('Penelope', function() {
   });
   describe('runConfiguredProcesses', function() {
     it('should start all configured processes', function(done) {
-      var runner = new Penelope();
+      var runner = new Proboscis();
       runner.addProcess('successful', 'true', [], true);
       runner.addProcess('failure', 'false', [], true);
       runner.runConfiguredProcesses();

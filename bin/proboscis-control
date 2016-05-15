@@ -7,9 +7,9 @@ var request = require('request'),
   Loader = require('yaml-config-loader')
   prettyjson = require('prettyjson');
 
-var usage = 'penelope-control [command] [process]';
+var usage = 'proboscis-control [command] [process]';
 yargs = yargs
-  .usage('Usage penelope-command [process-name] [subcommand (start, stop, restart, reload, run, or list)] [args]')
+  .usage('Usage proboscis-command [process-name] [subcommand (start, stop, restart, reload, run, or list)] [args]')
   .describe('port', 'The port to issue commands against.')
   .alias('port', 'p')
   .describe('host', 'The host to issue commands against.')
@@ -22,8 +22,8 @@ yargs = yargs
 var argv = yargs.argv;
 
 var loader = new Loader();
-loader.add('/etc/penelope.yaml');
-loader.add(process.env['HOME'] + '/.penelope.yaml');
+loader.add('/etc/proboscis.yaml');
+loader.add(process.env['HOME'] + '/.proboscis.yaml');
 loader.add(argv);
 loader.on('error', function() {});
 loader.load(function(error, config) {

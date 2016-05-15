@@ -8,11 +8,11 @@ var path = require('path'),
 var filter = require('./helpers/filter');
 
 var beeperPath = path.join(__dirname, 'fixtures', 'beeper.js');
-var penelopeBinPath = path.join(__dirname, '..', 'bin', 'penelope');
+var proboscisBinPath = path.join(__dirname, '..', 'bin', 'proboscis');
 
-describe('penelope executable', function() {
+describe('proboscis executable', function() {
   it('should display helptext', function(done) {
-    var stream = run(penelopeBinPath, ['-h']);
+    var stream = run(proboscisBinPath, ['-h']);
     var output = '';
     stream.stderr.pipe(es.through(
       function(data) {
@@ -26,7 +26,7 @@ describe('penelope executable', function() {
     .pipe(process.stdout);
   });
   it ('should print its own version number', function(done) {
-    var stream = run(penelopeBinPath, ['-v']);
+    var stream = run(proboscisBinPath, ['-v']);
     stream
       .pipe(es.split())
       .pipe(es.writeArray(function(error, array) {
@@ -39,7 +39,7 @@ describe('penelope executable', function() {
     var args = [
       '-c', beeperPath
     ];
-    var stream = run(penelopeBinPath, args);
+    var stream = run(proboscisBinPath, args);
     stream
       .pipe(es.split())
       .pipe(es.parse())
@@ -57,7 +57,7 @@ describe('penelope executable', function() {
       '-c', 'echo foo',
       '-c', beeperPath + ' -S jimmy -E hendrix'
     ];
-    var stream = run(penelopeBinPath, args);
+    var stream = run(proboscisBinPath, args);
     
     var eventStream = es.through();
 

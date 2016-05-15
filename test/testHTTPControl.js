@@ -8,9 +8,9 @@ var should = require('should'),
   EventEmitter = require('events').EventEmitter,
   createServer = require('../lib/server');
 
-var Penelope = function() {
+var Proboscis = function() {
   var _this = this;
-  this.name = 'penelope';
+  this.name = 'proboscis';
   this.version = '1.0.0';
   this.eventStream = new es.through(function(data) {
     this.emit('data', data);
@@ -31,17 +31,17 @@ var Penelope = function() {
   };
 };
 
-util.inherits(Penelope, EventEmitter);
+util.inherits(Proboscis, EventEmitter);
 
-Penelope.prototype.setChild = function(name, child) {
+Proboscis.prototype.setChild = function(name, child) {
   this.children[name] = child;
 };
-Penelope.prototype.getConfig = function(name) {
+Proboscis.prototype.getConfig = function(name) {
   if (!name) return this.configs;
   return this.configs[name] || null;
 };
 
-Penelope.prototype.getChildren = function() {
+Proboscis.prototype.getChildren = function() {
   return this.children;
 };
 
@@ -87,10 +87,10 @@ describe('HTTP server', function() {
   describe('GET', function() {
     it('should report the version number at `/`', function(done) {
       config.port = ports['version'];
-      var server = createServer(new Penelope, config, function() {
+      var server = createServer(new Proboscis, config, function() {
         request('http://localhost:' + ports['version'], function (error, response, body) {
           body = JSON.parse(body);
-          body.name.should.equal('lepew-penelope');
+          body.name.should.equal('proboscis');
           body.version.should.equal(require('../package.json').version);
           server.close(function() {
             done();
@@ -100,7 +100,7 @@ describe('HTTP server', function() {
     });
     it('should list the running processes at `/running-processes`', function(done) {
       config.port = ports['running'];
-      var server = createServer(new Penelope, config, function() {
+      var server = createServer(new Proboscis, config, function() {
         request('http://localhost:' + ports['running'] + '/running-processes', function (error, response, body) {
           body = JSON.parse(body);
           Object.keys(body).length.should.equal(1);
@@ -113,8 +113,8 @@ describe('HTTP server', function() {
     });
     it('should list the logs at `/log`', function(done) {
       config.port = ports['log'];
-      var penelope = new Penelope();
-      var server = createServer(penelope, config, function() {
+      var proboscis = new Proboscis();
+      var server = createServer(proboscis, config, function() {
         var logStream = request('http://localhost:' + ports['log'] + '/log')
         logStream.pipe(es.through(function(data) {
             var output = JSON.parse(data.toString());
@@ -124,7 +124,7 @@ describe('HTTP server', function() {
           }));
         // Wait for the client to connect, then emit a log event we can catch.
         setTimeout(function() {
-          penelope.eventStream.write({
+          proboscis.eventStream.write({
             name: 'echo',
             command: 'echo',
             stream: 'stdout',
@@ -137,11 +137,11 @@ describe('HTTP server', function() {
   describe('DELETE', function() {
     it('should kill a process when a DELETE is sent to `/running-process/:name`', function(done) {
       config.port = ports['delete good'];
-      var penelope = new Penelope();
-      var server = createServer(penelope, config, function() {
-        penelope.setChild('scratchy', {
+      var proboscis = new Proboscis();
+      var server = createServer(proboscis, config, function() {
+        proboscis.setChild('scratchy', {
           kill: function() {
-            penelope.emit('processClosed:scratchy');
+            proboscis.emit('processClosed:scratchy');
             server.close();
           }
         });
@@ -154,8 +154,8 @@ describe('HTTP server', function() {
     });
     it('should error when a DELETE is sent for a nonexistant name', function(done) {
       config.port = ports['delete bad nonexistant'];
-      var penelope = new Penelope();
-      var server = createServer(penelope, config, function() {
+      var proboscis = new Proboscis();
+      var server = createServer(proboscis, config, function() {
         request.del('http://localhost:' + ports['delete bad nonexistant'] + '/running-processes/itchy', function (error, response, body) {
           response.statusCode.should.equal(404);
           done();
@@ -164,10 +164,10 @@ describe('HTTP server', function() {
     });
     it('should error when the process fails to exit.', function(done) {
       config.port = ports['delete bad timeout'];
-      var penelope = new Penelope();
-      var server = createServer(penelope, config, function() {
+      var proboscis = new Proboscis();
+      var server = createServer(proboscis, config, function() {
         server.killProcessTimeout = 100;
-        penelope.setChild('scratchy', {
+        proboscis.setChild('scratchy', {
           kill: function() {}
         });
         request.del('http://localhost:' + ports['delete bad timeout'] + '/running-processes/scratchy', function (error, response, body) {
@@ -182,13 +182,13 @@ describe('HTTP server', function() {
   });
   describe('POST', function() {
     it('should issue an error if the request is incomplete', function(done) {
-      var penelope = new Penelope();
+      var proboscis = new Proboscis();
       config.port = ports['post bad incomplete'];
       var options = {
         url: 'http://localhost:' + ports['post bad incomplete'] + '/running-processes/beeper',
         form: {}
       };
-      var server = createServer(penelope, config, function() {
+      var server = createServer(proboscis, config, function() {
         request.post(options, function (error, response, body) {
           response.statusCode.should.equal(400);
           server.close(done);
@@ -196,9 +196,9 @@ describe('HTTP server', function() {
       });
     });
     it('should run a command when post is called with a valid request', function(done) {
-      var penelope = new Penelope();
+      var proboscis = new Proboscis();
       var commandWasRun = false;
-      penelope.runCommand = function() {
+      proboscis.runCommand = function() {
         commandWasRun = arguments;
       };
       config.port = ports['post good'];
@@ -209,7 +209,7 @@ describe('HTTP server', function() {
           args: ['-c']
         }
       };
-      var server = createServer(penelope, config, function() {
+      var server = createServer(proboscis, config, function() {
         request.post(options, function (error, response, body) {
           commandWasRun[0].should.equal('beeper');
           commandWasRun[1].should.equal('foo');
@@ -223,12 +223,12 @@ describe('HTTP server', function() {
   });
   describe('PUT', function() {
     it('should return a 404 if the command was not already created', function(done) {
-      var penelope = new Penelope();
+      var proboscis = new Proboscis();
       config.port = ports['put bad'];
       var options = {
         url: 'http://localhost:' + ports['put bad'] + '/processes/no-good',
       };
-      var server = createServer(penelope, config, function() {
+      var server = createServer(proboscis, config, function() {
         request.put(options, function (error, response, body) {
           console.log(body);
           response.statusCode.should.equal(404);
@@ -237,14 +237,14 @@ describe('HTTP server', function() {
       });
     });
     it('should return a 201 if the command was able to start', function(done) {
-      var penelope = new Penelope();
+      var proboscis = new Proboscis();
       config.port = ports['put good'];
       var options = {
         url: 'http://localhost:' + ports['put good'] + '/processes/foo',
       };
       var commandWasRun = null;
-      var server = createServer(penelope, config, function() {
-        penelope.runCommand = function() {
+      var server = createServer(proboscis, config, function() {
+        proboscis.runCommand = function() {
           commandWasRun = arguments;
         };
         request.put(options, function (error, response, body) {
@@ -266,9 +266,9 @@ describe('HTTP server', function() {
         }
       };
       config.keepAlive = false;
-      var penelope = new Penelope();
-      var server = createServer(penelope, config, function() {
-        penelope.emit('allProcessesClosed');
+      var proboscis = new Proboscis();
+      var server = createServer(proboscis, config, function() {
+        proboscis.emit('allProcessesClosed');
       });
     });
     it('should not kill the process when the last process exits if keepalive is on', function(done) {
@@ -282,9 +282,9 @@ describe('HTTP server', function() {
         }
       };
       config.keepAlive = true;
-      var penelope = new Penelope();
-      var server = createServer(penelope, config, function() {
-        penelope.emit('allProcessesClosed');
+      var proboscis = new Proboscis();
+      var server = createServer(proboscis, config, function() {
+        proboscis.emit('allProcessesClosed');
         setTimeout(function() {
           timedOut = true;
           server.close(function() {

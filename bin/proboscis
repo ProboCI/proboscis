@@ -8,13 +8,13 @@ var path = require('path');
 var Loader = require('yaml-config-loader');
 
 var yargs = require('yargs');
-var Penelope = require('../index');
+var Proboscis = require('../index');
 var server = require('../lib/server');
-var runner = new Penelope();
+var runner = new Proboscis();
 var loader = new Loader();
 
 var argv = yargs
-  .usage('penelope -c "echo foo" -c "echo bar"')
+  .usage('proboscis -c "echo foo" -c "echo bar"')
   .default('help', false)
   .describe('help', 'Display this help text.')
   .alias('help', 'h')
@@ -67,8 +67,8 @@ if (argv.keepAlive) {
 }
 
 loader.on('error', function(err) {});
-loader.add('/etc/penelope.yaml');
-loader.add(process.env['HOME'] + '/.penelope.yaml');
+loader.add('/etc/proboscis.yaml');
+loader.add(process.env['HOME'] + '/.proboscis.yaml');
 loader.add(argv);
 loader.load(function(error, config) {
   if (config.port) {
