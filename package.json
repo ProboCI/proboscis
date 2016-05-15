@@ -1,12 +1,12 @@
 {
-  "name": "lepew-penelope",
-  "version": "0.0.8",
+  "name": "proboscis",
+  "version": "1.0.0",
   "description": "A simple task wrapper that produces json event streams from the wrapped sub-processes.",
   "main": "index.js",
   "bin": {
-    "penelope": "./bin/penelope",
-    "penelope-format": "./bin/penelope-format",
-    "penelope-control": "./bin/penelope-control"
+    "proboscis": "./bin/proboscis",
+    "proboscis-format": "./bin/proboscis-format",
+    "proboscis-control": "./bin/proboscis-control"
   },
   "scripts": {
     "test": "./node_modules/.bin/mocha",
@@ -15,12 +15,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/tizzo/lepew-penelope.git"
+    "url": "git://github.com/ProboCI/proboscis.git"
   },
   "author": "Howard Tyson",
   "license": "GPL2",
   "bugs": {
-    "url": "https://github.com/tizzo/lepew-penelope/issues"
+    "url": "https://github.com/ProboCI/proboscis/issues"
   },
   "dependencies": {
     "async": "~0.8.0",
