@@ -1,19 +1,22 @@
-var path = require('path'),
+'use strict';
+
+const path = require('path'),
   should = require('should'),
   http = require('http'),
   run = require('comandante'),
   es = require('event-stream'),
   async = require('async');
 
-var filter = require('./helpers/filter');
+const filter = require('./helpers/filter');
 
-var beeperPath = path.join(__dirname, 'fixtures', 'beeper.js');
-var proboscisBinPath = path.join(__dirname, '..', 'bin', 'proboscis');
+const beeperPath = path.join(__dirname, 'fixtures', 'beeper.js');
+const proboscisBinPath = path.join(__dirname, '..', 'bin', 'proboscis');
 
 describe('proboscis executable', function() {
+  this.timeout(5000);
   it('should display helptext', function(done) {
-    var stream = run(proboscisBinPath, ['-h']);
-    var output = '';
+    let stream = run(proboscisBinPath, ['-h']);
+    let output = '';
     stream.stderr.pipe(es.through(
       function(data) {
         output += data;
@@ -26,7 +29,7 @@ describe('proboscis executable', function() {
     .pipe(process.stdout);
   });
   it ('should print its own version number', function(done) {
-    var stream = run(proboscisBinPath, ['-v']);
+    let stream = run(proboscisBinPath, ['-v']);
     stream
       .pipe(es.split())
       .pipe(es.writeArray(function(error, array) {
@@ -36,10 +39,10 @@ describe('proboscis executable', function() {
       }));
   });
   it('should run a single command', function(done) {
-    var args = [
+    let args = [
       '-c', beeperPath
     ];
-    var stream = run(proboscisBinPath, args);
+    let stream = run(proboscisBinPath, args);
     stream
       .pipe(es.split())
       .pipe(es.parse())
@@ -53,13 +56,13 @@ describe('proboscis executable', function() {
       }));
   });
   it('should run a multiple commands', function(done) {
-    var args = [
+    let args = [
       '-c', 'echo foo',
       '-c', beeperPath + ' -S jimmy -E hendrix'
     ];
-    var stream = run(proboscisBinPath, args);
+    let stream = run(proboscisBinPath, args);
 
-    var eventStream = es.through();
+    let eventStream = es.through();
 
     stream
       .pipe(es.split())
