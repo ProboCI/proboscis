@@ -1,7 +1,8 @@
 language: node_js
 node_js:
-  - "0.11"
-  - "0.10"
+  - '4.8.3'
+  - '4.3.0'
+  - '6.11.0'
 script:
   - npm run coverage
 after_script:

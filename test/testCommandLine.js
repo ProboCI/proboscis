@@ -58,7 +58,7 @@ describe('proboscis executable', function() {
       '-c', beeperPath + ' -S jimmy -E hendrix'
     ];
     var stream = run(proboscisBinPath, args);
-    
+
     var eventStream = es.through();
 
     stream
