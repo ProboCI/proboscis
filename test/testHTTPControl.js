@@ -1,4 +1,6 @@
-var should = require('should'),
+'use strict';
+
+const should = require('should'),
   request = require('request'),
   portfinder = require('portfinder'),
   async = require('async'),
@@ -8,13 +10,15 @@ var should = require('should'),
   EventEmitter = require('events').EventEmitter,
   createServer = require('../lib/server');
 
-var Proboscis = function() {
-  var _this = this;
+let Proboscis = function() {
+  let _this = this;
+  this.runCommand = this.runCommand.bind(this);
   this.name = 'proboscis';
   this.version = '1.0.0';
   this.eventStream = new es.through(function(data) {
     this.emit('data', data);
   });
+  this.commandWasRun = false;
   this.configs = {
     'foo': {
       name: 'foo',
@@ -45,50 +49,34 @@ Proboscis.prototype.getChildren = function() {
   return this.children;
 };
 
-var config = {
+Proboscis.prototype.runCommand = function(name, command, args, done) {
+  this.commandWasRun = arguments;
+  if (done) {
+    done();
+  }
+};
+
+let config = {
   keepAlive: true,
   log: function() {}
 };
-var ports = {};
+let port;
+
+beforeEach(function(done) {
+  portfinder.getPort(function(err, foundPort) {
+    port = foundPort;
+    done(err);
+  });
+});
 
 describe('HTTP server', function() {
-  before(function(done) {
-    async.parallel([
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort,
-      portfinder.getPort
-    ], function(error, results) {
-      ports['version'] = results[0];
-      ports['running'] = results[1];
-      ports['running single'] = results[2];
-      ports['log'] = results[3];
-      ports['delete good'] = results[4];
-      ports['delete bad nonexistant'] = results[5];
-      ports['delete bad timeout'] = results[6];
-      ports['keep alive on'] = results[7];
-      ports['keep alive off'] = results[8];
-      ports['post good'] = results[9];
-      ports['post bad incomplete'] = results[10];
-      ports['put bad'] = results[10];
-      ports['put good'] = results[10];
-      done();
-    });
-  });
+
   describe('GET', function() {
+
     it('should report the version number at `/`', function(done) {
-      config.port = ports['version'];
-      var server = createServer(new Proboscis, config, function() {
-        request('http://localhost:' + ports['version'], function (error, response, body) {
+      config.port = port;
+      let server = createServer(new Proboscis(), config, function() {
+        request('http://localhost:' + config.port, function (error, response, body) {
           body = JSON.parse(body);
           body.name.should.equal('proboscis');
           body.version.should.equal(require('../package.json').version);
@@ -98,10 +86,11 @@ describe('HTTP server', function() {
         });
       });
     });
+
     it('should list the running processes at `/running-processes`', function(done) {
-      config.port = ports['running'];
-      var server = createServer(new Proboscis, config, function() {
-        request('http://localhost:' + ports['running'] + '/running-processes', function (error, response, body) {
+      config.port = port;
+      let server = createServer(new Proboscis, config, function() {
+        request('http://localhost:' + config.port + '/running-processes', function (error, response, body) {
           body = JSON.parse(body);
           Object.keys(body).length.should.equal(1);
           body.foo.args.length.should.equal(3);
@@ -111,13 +100,14 @@ describe('HTTP server', function() {
         });
       });
     });
+
     it('should list the logs at `/log`', function(done) {
-      config.port = ports['log'];
-      var proboscis = new Proboscis();
-      var server = createServer(proboscis, config, function() {
-        var logStream = request('http://localhost:' + ports['log'] + '/log')
+      config.port = port;
+      let proboscis = new Proboscis();
+      let server = createServer(proboscis, config, function() {
+        let logStream = request('http://localhost:' + config.port + '/log')
         logStream.pipe(es.through(function(data) {
-            var output = JSON.parse(data.toString());
+            let output = JSON.parse(data.toString());
             output.name.should.equal('echo');
             output.stream.should.equal('stdout');
             done();
@@ -134,43 +124,47 @@ describe('HTTP server', function() {
       });
     });
   });
+
   describe('DELETE', function() {
+
     it('should kill a process when a DELETE is sent to `/running-process/:name`', function(done) {
-      config.port = ports['delete good'];
-      var proboscis = new Proboscis();
-      var server = createServer(proboscis, config, function() {
+      config.port = port;
+      let proboscis = new Proboscis();
+      let server = createServer(proboscis, config, function() {
         proboscis.setChild('scratchy', {
           kill: function() {
             proboscis.emit('processClosed:scratchy');
             server.close();
           }
         });
-        request.del('http://localhost:' + ports['delete good'] + '/running-processes/scratchy', function (error, response, body) {
+        request.del('http://localhost:' + config.port + '/running-processes/scratchy', function (error, response, body) {
           JSON.parse(body).message.should.equal(util.format('Process `scratchy` stopped'));
           response.statusCode.should.equal(200);
           done(error);
         });
       });
     });
+
     it('should error when a DELETE is sent for a nonexistant name', function(done) {
-      config.port = ports['delete bad nonexistant'];
-      var proboscis = new Proboscis();
-      var server = createServer(proboscis, config, function() {
-        request.del('http://localhost:' + ports['delete bad nonexistant'] + '/running-processes/itchy', function (error, response, body) {
+      config.port = port;
+      let proboscis = new Proboscis();
+      let server = createServer(proboscis, config, function() {
+        request.del('http://localhost:' + config.port + '/running-processes/itchy', function (error, response, body) {
           response.statusCode.should.equal(404);
           done();
         });
       });
     });
+
     it('should error when the process fails to exit.', function(done) {
-      config.port = ports['delete bad timeout'];
-      var proboscis = new Proboscis();
-      var server = createServer(proboscis, config, function() {
+      config.port = port;
+      let proboscis = new Proboscis();
+      let server = createServer(proboscis, config, function() {
         server.killProcessTimeout = 100;
         proboscis.setChild('scratchy', {
           kill: function() {}
         });
-        request.del('http://localhost:' + ports['delete bad timeout'] + '/running-processes/scratchy', function (error, response, body) {
+        request.del('http://localhost:' + config.port + '/running-processes/scratchy', function (error, response, body) {
           server.close(function() {
             JSON.parse(body).message.should.equal('Process failed to close.');
             response.statusCode.should.equal(500);
@@ -180,70 +174,73 @@ describe('HTTP server', function() {
       });
     });
   });
+
   describe('POST', function() {
+
     it('should issue an error if the request is incomplete', function(done) {
-      var proboscis = new Proboscis();
-      config.port = ports['post bad incomplete'];
-      var options = {
-        url: 'http://localhost:' + ports['post bad incomplete'] + '/running-processes/beeper',
+      let proboscis = new Proboscis();
+      config.port = port;
+      let options = {
+        url: 'http://localhost:' + config.port + '/running-processes/beeper',
         form: {}
       };
-      var server = createServer(proboscis, config, function() {
+      let server = createServer(proboscis, config, function() {
         request.post(options, function (error, response, body) {
           response.statusCode.should.equal(400);
           server.close(done);
         });
       });
     });
+
     it('should run a command when post is called with a valid request', function(done) {
-      var proboscis = new Proboscis();
-      var commandWasRun = false;
-      proboscis.runCommand = function() {
-        commandWasRun = arguments;
-      };
-      config.port = ports['post good'];
-      var options = {
-        url: 'http://localhost:' + ports['post good'] + '/running-processes/beeper',
+      let proboscis = new Proboscis();
+
+      config.port = port;
+
+      let options = {
+        url: 'http://localhost:' + config.port + '/running-processes/beeper',
         form: {
           command: 'foo',
           args: ['-c']
         }
       };
-      var server = createServer(proboscis, config, function() {
+      let server = createServer(proboscis, config, function() {
         request.post(options, function (error, response, body) {
-          commandWasRun[0].should.equal('beeper');
-          commandWasRun[1].should.equal('foo');
-          commandWasRun[2].length.should.equal(1);
-          commandWasRun[2][0].should.equal('-c');
+          proboscis.commandWasRun['0'].should.equal('beeper');
+          proboscis.commandWasRun['1'].should.equal('foo');
+          proboscis.commandWasRun['2'].length.should.equal(1);
+          proboscis.commandWasRun['2'][0].should.equal('-c');
           response.statusCode.should.equal(200);
           server.close(done);
         });
       });
     });
   });
+
   describe('PUT', function() {
+
     it('should return a 404 if the command was not already created', function(done) {
-      var proboscis = new Proboscis();
-      config.port = ports['put bad'];
-      var options = {
-        url: 'http://localhost:' + ports['put bad'] + '/processes/no-good',
+      let proboscis = new Proboscis();
+      config.port = port;
+      let options = {
+        url: 'http://localhost:' + config.port + '/processes/no-good',
       };
-      var server = createServer(proboscis, config, function() {
+      let server = createServer(proboscis, config, function() {
         request.put(options, function (error, response, body) {
-          console.log(body);
           response.statusCode.should.equal(404);
           server.close(done);
         });
       });
     });
+
     it('should return a 201 if the command was able to start', function(done) {
-      var proboscis = new Proboscis();
-      config.port = ports['put good'];
-      var options = {
-        url: 'http://localhost:' + ports['put good'] + '/processes/foo',
+      let proboscis = new Proboscis();
+      config.port = port;
+      let options = {
+        url: 'http://localhost:' + config.port + '/processes/foo',
       };
-      var commandWasRun = null;
-      var server = createServer(proboscis, config, function() {
+      let commandWasRun = null;
+      let server = createServer(proboscis, config, function() {
         proboscis.runCommand = function() {
           commandWasRun = arguments;
         };
@@ -255,45 +252,45 @@ describe('HTTP server', function() {
         });
       });
     });
-
   });
+
   describe('shutdown', function() {
+
     it('should kill the process when the last process exits if keepalive is off', function(done) {
-      config.port = ports['keep alive off'];
+      config.port = port;
       config.log = function(message) {
         if (JSON.parse(message).message == 'Server successfully shutdown') {
           done();
         }
       };
       config.keepAlive = false;
-      var proboscis = new Proboscis();
-      var server = createServer(proboscis, config, function() {
+      let proboscis = new Proboscis();
+      let server = createServer(proboscis, config, function() {
         proboscis.emit('allProcessesClosed');
       });
     });
+
     it('should not kill the process when the last process exits if keepalive is on', function(done) {
-      config.port = ports['keep alive on'];
+      config.port = port;
       // We use a timeout to detect if the server would have closed by itself
       // before we kill it.
-      var timedOut = false;
+      let timedOut = false;
       config.log = function(message) {
         if (!timedOut && JSON.parse(message).message == 'Server successfully shutdown') {
           done(new Error('Server shut down'));
         }
       };
       config.keepAlive = true;
-      var proboscis = new Proboscis();
-      var server = createServer(proboscis, config, function() {
+      let proboscis = new Proboscis();
+      let server = createServer(proboscis, config, function() {
         proboscis.emit('allProcessesClosed');
         setTimeout(function() {
           timedOut = true;
           server.close(function() {
             done();
           });
-        }, 5)
+        }, 5);
       });
     });
   });
 });
-
-

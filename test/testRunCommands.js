@@ -71,7 +71,7 @@ describe('Proboscis', function() {
     });
     it('should start multiple subcommands.', function(done) {
       var runner = new Proboscis();
-      
+
       async.parallel([
         function(cb) {
           var hasRun = false;
