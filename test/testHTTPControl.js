@@ -78,7 +78,7 @@ describe('HTTP server', function() {
       let server = createServer(new Proboscis(), config, function() {
         request('http://localhost:' + config.port, function (error, response, body) {
           body = JSON.parse(body);
-          body.name.should.equal('proboscis');
+          body.name.should.equal('probo-proboscis');
           body.version.should.equal(require('../package.json').version);
           server.close(function() {
             done();
@@ -127,7 +127,7 @@ describe('HTTP server', function() {
 
   describe('DELETE', function() {
 
-    it('should kill a process when a DELETE is sent to `/running-process/:name`', function(done) {
+    it('should kill a process when a DELETE is sent to `/running-processes/:name`', function(done) {
       config.port = port;
       let proboscis = new Proboscis();
       let server = createServer(proboscis, config, function() {

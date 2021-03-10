@@ -17,12 +17,12 @@ describe('proboscis executable', function() {
   it('should display helptext', function(done) {
     let stream = run(proboscisBinPath, ['-h']);
     let output = '';
-    stream.stderr.pipe(es.through(
+    stream.stdout.pipe(es.through(
       function(data) {
         output += data;
       },
       function() {
-        output.should.containEql('Display this help text');
+        output.should.containEql('Display this help text.');
         done();
       }
     ))
