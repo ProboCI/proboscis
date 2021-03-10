@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "./node_modules/.bin/mocha",
-    "coverage": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha",
+    "coverage": "nyc npm run test",
     "watch": "./node_modules/.bin/mocha -w"
   },
   "repository": {
@@ -41,7 +41,7 @@
     "gulp": "^4.0.2",
     "gulp-jshint": "^2.0.4",
     "gulp-mocha": "^8.0.0",
-    "istanbul": "^0.4.5",
+    "nyc": "^15.1.0",
     "jscs": "^3.0.7",
     "jshint": "^2.9.5",
     "mocha": "^8.3.1",
