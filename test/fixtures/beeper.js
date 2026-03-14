@@ -2,9 +2,9 @@
 // A simple test script used to verify that we're getting the
 // right output from our process wrapper.
 
-var yargs = require('yargs');
+const yargs = require('yargs');
 
-var argv = yargs
+const argv = yargs
   .usage('Perform test operations.')
   .example('./beeper.js --stdout-messages 5 --stderr-messages 5 --exit 0', 'print 5 messages to stdout and 5 to stderr then exit 0')
   .default('h', false)
@@ -35,16 +35,15 @@ if (argv.help) {
   process.exit(0);
 }
 
-
 // State to watch for the right time to exit.
-var messagesSent = {
+const messagesSent = {
   stdout: 0,
   stderr: 0,
 };
 
 setInterval(function() {
-  var outMet = messagesSent.stdout >= argv['stdout-messages'];
-  var errMet = messagesSent.stderr >= argv['stderr-messages'];
+  const outMet = messagesSent.stdout >= argv['stdout-messages'];
+  const errMet = messagesSent.stderr >= argv['stderr-messages'];
   if (outMet && errMet) {
     process.exit(argv.exit);
   }
@@ -57,5 +56,3 @@ setInterval(function() {
     messagesSent.stderr++;
   }
 }, argv.interval);
-
-
