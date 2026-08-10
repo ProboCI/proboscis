@@ -37,3 +37,8 @@ coverage.out
 # Locally generated coverage reports
 coverage.html
 *.swo
+
+# nyc coverage output
+.nyc_output
+
+.DS_Store

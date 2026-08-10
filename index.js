@@ -45,9 +45,11 @@ class Proboscis extends EventEmitter {
     this.processes[name] = child;
     this.addProcess(name, command, args);
 
-    // Add stdout and stderr to our unified raw stream.
-    child.stdout.pipe(this.rawStream);
-    child.stderr.pipe(this.rawStream);
+    // Add stdout and stderr to our unified raw stream. Every child feeds this
+    // one stream, so no single child may end it; that is handled in
+    // emitEndEvent() once they have all exited.
+    child.stdout.pipe(this.rawStream, {end: false});
+    child.stderr.pipe(this.rawStream, {end: false});
 
     // Bind for event processing for our done callback if we have any.
     if (done) {
@@ -165,6 +167,9 @@ class Proboscis extends EventEmitter {
     this.emit('processClosed', name);
     this.emit('processClosed:' + name, name);
     if (Object.keys(this.processes).length === 0) {
+      if (this.closeStreamWithLastProcess && !this.rawStream.writableEnded) {
+        this.rawStream.end();
+      }
       this.emit('allProcessesClosed');
     }
   }

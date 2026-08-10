@@ -10,7 +10,9 @@ const yargs = require('yargs');
 const Proboscis = require('../index');
 const server = require('../lib/server');
 const runner = new Proboscis();
-const loader = new Loader();
+// The optional config files below may not exist, so keep loading the remaining
+// sources (including argv) rather than aborting on the first missing file.
+const loader = new Loader({stopOnError: false});
 
 const argv = yargs
   .usage('proboscis -c "echo foo" -c "echo bar"')
@@ -27,6 +29,9 @@ const argv = yargs
   .default('name', false)
   .describe('port', 'If specified, a port to listen on for control commands.')
   .alias('port', 'p')
+  // Declared boolean so a bare `--keep-alive` parses as true; with only a
+  // default yargs treats the flag as taking a value.
+  .boolean('keep-alive')
   .describe('keep-alive', 'Keep the server alive even if all processes have closed, useful if you are going to be restarting services.')
   .alias('keep-alive', 'k')
   .default('keep-alive', false)

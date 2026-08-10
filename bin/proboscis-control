@@ -21,7 +21,9 @@ yargs = yargs
   .alias('command', 'c');
 const argv = yargs.argv;
 
-const loader = new Loader();
+// The optional config files below may not exist, so keep loading the remaining
+// sources (including argv) rather than aborting on the first missing file.
+const loader = new Loader({stopOnError: false});
 const os = require('os');
 loader.add('/etc/proboscis.yaml');
 loader.add(os.homedir() + '/.proboscis.yaml');
@@ -136,7 +138,9 @@ loader.load(function(error, config) {
         break;
 
       case 'start':
-        fetch(baseURL + '/running-processes/' + name, {
+        // Starting an already-configured process is served by `/processes`;
+        // `/running-processes` only covers processes that are already up.
+        fetch(baseURL + '/processes/' + name, {
           method: 'PUT',
         }).then(genericHandler).catch(function(err) {
           console.error('Failed to connect:', err.message);
@@ -158,10 +162,10 @@ loader.load(function(error, config) {
           method: 'DELETE',
         }).then(async function(response) {
           await genericHandler(response);
-          return fetch(baseURL + '/running-processes/' + name, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({}),
+          // Restart reuses the stored config, so start it back up the same way
+          // the `start` subcommand does.
+          return fetch(baseURL + '/processes/' + name, {
+            method: 'PUT',
           });
         }).then(genericHandler).catch(function(err) {
           console.error('Failed to connect:', err.message);
