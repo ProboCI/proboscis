@@ -1,22 +1,23 @@
-var should = require('should'),
-  Proboscis = require('..'),
-  es = require('event-stream'),
-  path = require('path'),
-  async = require('async'),
-  http = require('http');
+'use strict';
 
-var filter = require('./helpers/filter');
+const should = require('should');
+const Proboscis = require('..');
+const es = require('event-stream');
+const path = require('path');
+const async = require('async');
 
-var pathToBeeper = path.join(__dirname, 'fixtures', 'beeper.js');
+const filter = require('./helpers/filter');
+
+const pathToBeeper = path.join(__dirname, 'fixtures', 'beeper.js');
 
 describe('Proboscis', function() {
   describe('createEventStream', function() {
     it('should return an event stream that decorates events', function() {
-      var runner = new Proboscis();
-      var stream1 = runner.createEventStream('one', 'foo', 'stdout');
-      var stream2 = runner.createEventStream('two', 'bar', 'stderr');
-      var events = [];
-      var eventHandler = function(data) {
+      const runner = new Proboscis();
+      const stream1 = runner.createEventStream('one', 'foo', 'stdout');
+      const stream2 = runner.createEventStream('two', 'bar', 'stderr');
+      const events = [];
+      const eventHandler = function(data) {
         events.push(data);
       };
       stream1.on('data', eventHandler);
@@ -37,7 +38,7 @@ describe('Proboscis', function() {
   describe('runCommand', function() {
     it('should start a subcommand.', function(done) {
       return done();
-      var runner = new Proboscis();
+      const runner = new Proboscis();
       runner.eventStream
         .pipe(filter({stream: 'stdout'}))
         .pipe(es.writeArray(function(error, array) {
@@ -45,23 +46,23 @@ describe('Proboscis', function() {
           array.length.should.equal(4);
           done(error);
         }));
-      var args = [
+      const args = [
         '--stdout-messages', 5,
-        '--stderr-messages', 5
+        '--stderr-messages', 5,
       ];
       runner.runCommand('one', pathToBeeper, args);
     });
     it('should call a provided callback when a subcommand completes.', function(done) {
-      var runner = new Proboscis();
+      const runner = new Proboscis();
       runner.runCommand('foo', pathToBeeper, ['--stdout-message', 'foo'], function(error) {
         should.not.exist(error);
         done();
       });
     });
     it('should call a provided callback with an error if the subcommand exits non-zero.', function(done) {
-      var runner = new Proboscis();
-      var args = [
-        '--exit', 2
+      const runner = new Proboscis();
+      const args = [
+        '--exit', 2,
       ];
       runner.runCommand('one', pathToBeeper, args, function(error) {
         should.exist(error);
@@ -70,16 +71,16 @@ describe('Proboscis', function() {
       });
     });
     it('should start multiple subcommands.', function(done) {
-      var runner = new Proboscis();
+      const runner = new Proboscis();
 
       async.parallel([
         function(cb) {
-          var hasRun = false;
+          let hasRun = false;
           runner.eventStream
             .on('data', function() {
               if (!hasRun) {
                 hasRun = true;
-                var children = runner.getChildren();
+                const children = runner.getChildren();
                 Object.keys(children).length.should.equal(2);
                 cb();
               }
@@ -89,7 +90,7 @@ describe('Proboscis', function() {
           runner.eventStream
             .pipe(filter({
               stream: 'stderr',
-              name: 'one'
+              name: 'one',
             }))
             .pipe(es.writeArray(function(error, array) {
               array[0].message.should.equal('pong');
@@ -127,7 +128,7 @@ describe('Proboscis', function() {
   });
   describe('runConfiguredProcesses', function() {
     it('should start all configured processes', function(done) {
-      var runner = new Proboscis();
+      const runner = new Proboscis();
       runner.addProcess('successful', 'true', [], true);
       runner.addProcess('failure', 'false', [], true);
       runner.runConfiguredProcesses();

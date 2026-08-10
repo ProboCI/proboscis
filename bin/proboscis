@@ -1,19 +1,18 @@
 #! /usr/bin/env node
-var parse = require('shell-quote').parse;
-var es = require('event-stream');
-var async = require('async');
-var fs = require('fs');
-var util = require('util');
-var path = require('path');
-var Loader = require('yaml-config-loader');
+'use strict';
 
-var yargs = require('yargs');
-var Proboscis = require('../index');
-var server = require('../lib/server');
-var runner = new Proboscis();
-var loader = new Loader();
+const os = require('os');
+const parse = require('shell-quote').parse;
+const es = require('event-stream');
+const Loader = require('yaml-config-loader');
 
-var argv = yargs
+const yargs = require('yargs');
+const Proboscis = require('../index');
+const server = require('../lib/server');
+const runner = new Proboscis();
+const loader = new Loader();
+
+const argv = yargs
   .usage('proboscis -c "echo foo" -c "echo bar"')
   .default('help', false)
   .describe('help', 'Display this help text.')
@@ -43,12 +42,12 @@ if (argv.version) {
   process.exit(0);
 }
 
-var commands = argv.command;
+let commands = argv.command;
 if (typeof argv.command === 'string') {
   commands = [argv.command];
 }
 
-var name = argv.name;
+let name = argv.name;
 if (typeof argv.name === 'string') {
   name = [argv.name];
 }
@@ -57,8 +56,7 @@ runner.eventStream
   .pipe(es.stringify())
   .pipe(process.stdout);
 
-var i = null;
-for (i in argv._) {
+for (const i in argv._) {
   loader.add(argv._[i]);
 }
 
@@ -68,19 +66,18 @@ if (argv.keepAlive) {
 
 loader.on('error', function(err) {});
 loader.add('/etc/proboscis.yaml');
-loader.add(process.env['HOME'] + '/.proboscis.yaml');
+loader.add(os.homedir() + '/.proboscis.yaml');
 loader.add(argv);
 loader.load(function(error, config) {
   if (config.port) {
     config.log = console.log;
     server(runner, config);
   }
-  var i = null;
-  for (i in commands) {
-    var command = commands[i];
-    var args = parse(command);
-    var binary = args.shift();
-    var commandName = binary;
+  for (const i in commands) {
+    const command = commands[i];
+    const args = parse(command);
+    const binary = args.shift();
+    let commandName = binary;
     if (name !== false && name[i] !== undefined) {
       commandName = name[i];
     }

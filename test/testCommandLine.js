@@ -1,11 +1,10 @@
 'use strict';
 
-const path = require('path'),
-  should = require('should'),
-  http = require('http'),
-  run = require('comandante'),
-  es = require('event-stream'),
-  async = require('async');
+const path = require('path');
+const should = require('should');
+const run = require('comandante');
+const es = require('event-stream');
+const async = require('async');
 
 const filter = require('./helpers/filter');
 
@@ -15,21 +14,21 @@ const proboscisBinPath = path.join(__dirname, '..', 'bin', 'proboscis');
 describe('proboscis executable', function() {
   this.timeout(5000);
   it('should display helptext', function(done) {
-    let stream = run(proboscisBinPath, ['-h']);
+    const stream = run(proboscisBinPath, ['-h']);
     let output = '';
-    stream.stderr.pipe(es.through(
-      function(data) {
-        output += data;
-      },
-      function() {
-        output.should.containEql('Display this help text');
-        done();
-      }
-    ))
-    .pipe(process.stdout);
+    const collect = function(data) {
+      output += data;
+    };
+    const check = function() {
+      output.should.containEql('Display this help text');
+      done();
+    };
+    stream.on('data', collect);
+    stream.stderr.on('data', collect);
+    stream.on('end', check);
   });
-  it ('should print its own version number', function(done) {
-    let stream = run(proboscisBinPath, ['-v']);
+  it('should print its own version number', function(done) {
+    const stream = run(proboscisBinPath, ['-v']);
     stream
       .pipe(es.split())
       .pipe(es.writeArray(function(error, array) {
@@ -39,10 +38,10 @@ describe('proboscis executable', function() {
       }));
   });
   it('should run a single command', function(done) {
-    let args = [
-      '-c', beeperPath
+    const args = [
+      '-c', beeperPath,
     ];
-    let stream = run(proboscisBinPath, args);
+    const stream = run(proboscisBinPath, args);
     stream
       .pipe(es.split())
       .pipe(es.parse())
@@ -56,13 +55,13 @@ describe('proboscis executable', function() {
       }));
   });
   it('should run a multiple commands', function(done) {
-    let args = [
+    const args = [
       '-c', 'echo foo',
-      '-c', beeperPath + ' -S jimmy -E hendrix'
+      '-c', beeperPath + ' -S jimmy -E hendrix',
     ];
-    let stream = run(proboscisBinPath, args);
+    const stream = run(proboscisBinPath, args);
 
-    let eventStream = es.through();
+    const eventStream = es.through();
 
     stream
       .pipe(es.split())
@@ -96,7 +95,7 @@ describe('proboscis executable', function() {
               array[0].message.should.equal('hendrix');
               cb(error);
             }));
-        }
+        },
       ],
     function(error) {
       done();

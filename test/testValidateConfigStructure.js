@@ -1,5 +1,7 @@
-var should = require('should');
-var validator = require('../lib/validateConfigStructure');
+'use strict';
+
+const should = require('should');
+const validator = require('../lib/validateConfigStructure');
 
 describe('validateConfigStructure', function() {
   it('should that the command is present and is a string', function() {

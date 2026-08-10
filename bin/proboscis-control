@@ -1,13 +1,13 @@
 #! /usr/bin/env node
-var request = require('request'),
-  util = require('util'),
-  ev = require('event-stream'),
-  parse = require('shell-quote').parse,
-  yargs = require('yargs'),
-  Loader = require('yaml-config-loader')
-  prettyjson = require('prettyjson');
+'use strict';
 
-var usage = 'proboscis-control [command] [process]';
+const util = require('util');
+const parse = require('shell-quote').parse;
+const Loader = require('yaml-config-loader');
+const prettyjson = require('prettyjson');
+
+const usage = 'proboscis-control [command] [process]';
+let yargs = require('yargs');
 yargs = yargs
   .usage('Usage proboscis-command [process-name] [subcommand (start, stop, restart, reload, run, or list)] [args]')
   .describe('port', 'The port to issue commands against.')
@@ -19,11 +19,12 @@ yargs = yargs
   .alias('help', 'h')
   .describe('command', 'Only for use with the `run` subcommand. A command to run.')
   .alias('command', 'c');
-var argv = yargs.argv;
+const argv = yargs.argv;
 
-var loader = new Loader();
+const loader = new Loader();
+const os = require('os');
 loader.add('/etc/proboscis.yaml');
-loader.add(process.env['HOME'] + '/.proboscis.yaml');
+loader.add(os.homedir() + '/.proboscis.yaml');
 loader.add(argv);
 loader.on('error', function() {});
 loader.load(function(error, config) {
@@ -37,9 +38,9 @@ loader.load(function(error, config) {
     process.exit(1);
   }
 
-  var baseURL = 'http://' + config.host + ':' + config.port;
+  const baseURL = 'http://' + config.host + ':' + config.port;
 
-  var operation = argv._[0];
+  const operation = argv._[0];
 
   switch (operation) {
     case 'run':
@@ -50,17 +51,16 @@ loader.load(function(error, config) {
         console.error(util.format('You must provide the name of the process as the second arugment when using `%s`', operation));
         process.exit(1);
       }
-      else {
-        var name = argv._[1];
-      }
   }
 
-  var options = {
-    json: true
-  };
+  const name = argv._[1];
 
-  var genericCallback = function (error, response, body) {
-    if (error) throw error;
+  const genericHandler = async function(response) {
+    if (!response.ok) {
+      console.error('An error occurred.');
+      process.exit(1);
+    }
+    const body = await response.json();
     if (body && body.message) {
       console.log(body.message);
     }
@@ -74,66 +74,113 @@ loader.load(function(error, config) {
     switch (operation) {
 
       case 'log':
-        request(baseURL + '/log', { timeout: false }).pipe(process.stdout);
+        fetch(baseURL + '/log').then(function(response) {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          function read() {
+            reader.read().then(function(result) {
+              if (result.done) return;
+              process.stdout.write(decoder.decode(result.value, {stream: true}));
+              read();
+            }).catch(function(err) {
+              console.error('Error reading log stream:', err.message);
+              process.exit(1);
+            });
+          }
+          read();
+        }).catch(function(err) {
+          console.error('Failed to connect:', err.message);
+          process.exit(1);
+        });
         break;
 
       case 'list':
-        request(baseURL + '/running-processes', options, function(error, response, body) {
-          if (error) throw new Error('Could not connect to service');
+        fetch(baseURL + '/running-processes').then(async function(response) {
+          if (!response.ok) {
+            throw new Error('Could not connect to service');
+          }
+          const body = await response.json();
           console.log(prettyjson.render(body, { noColor: !process.stdout.isTTY }));
+        }).catch(function(err) {
+          console.error(err.message);
+          process.exit(1);
         });
         break;
 
       case 'run':
-        if (!config.command) {
+        let runCommand = config.command;
+        if (!runCommand) {
           if (!config._[2]) {
             console.error('--command (-c) is required for use with the run command.');
             process.exit(1);
           }
           else {
-            var params = arguments = Array.prototype.slice.call(process.argv, 0);
-            var position = params.indexOf('run') + 2;
-            config.command = params.splice(position, params.length).join(' ');
+            const params = Array.prototype.slice.call(process.argv, 0);
+            const position = params.indexOf('run') + 2;
+            runCommand = params.splice(position, params.length).join(' ');
           }
         }
-        var args = parse(config.command);
-        var binary = args.shift();
-        var options = {
-          url: baseURL + '/running-processes/' + name,
-          form: {
+        const runArgs = parse(runCommand);
+        const binary = runArgs.shift();
+        fetch(baseURL + '/running-processes/' + name, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
             command: binary,
-            args: args
-          },
-          json: true
-        };
-        request.post(options, genericCallback);
+            args: runArgs,
+          }),
+        }).then(genericHandler).catch(function(err) {
+          console.error('Failed to connect:', err.message);
+          process.exit(1);
+        });
         break;
 
       case 'start':
-        request.put(baseURL + '/running-processes/' + name, options, genericCallback);
+        fetch(baseURL + '/running-processes/' + name, {
+          method: 'PUT',
+        }).then(genericHandler).catch(function(err) {
+          console.error('Failed to connect:', err.message);
+          process.exit(1);
+        });
         break;
 
       case 'stop':
-        request.del(baseURL + '/running-processes/' + name, options, genericCallback);
+        fetch(baseURL + '/running-processes/' + name, {
+          method: 'DELETE',
+        }).then(genericHandler).catch(function(err) {
+          console.error('Failed to connect:', err.message);
+          process.exit(1);
+        });
         break;
 
       case 'restart':
-        request.del(baseURL + '/running-processes/' + name, options, function(error, response, body) {
-          genericCallback.apply(this, arguments);
-          request.post(baseURL + '/running-processes/' + name, options, genericCallback);
+        fetch(baseURL + '/running-processes/' + name, {
+          method: 'DELETE',
+        }).then(async function(response) {
+          await genericHandler(response);
+          return fetch(baseURL + '/running-processes/' + name, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({}),
+          });
+        }).then(genericHandler).catch(function(err) {
+          console.error('Failed to connect:', err.message);
+          process.exit(1);
         });
         break;
 
       case undefined:
-        throw new Error(yargs.help());
+        console.log(yargs.help());
+        process.exit(1);
         break;
 
       default:
-        throw new Error(util.format('Unsupoorted operation `%s`', operation));
+        console.error(util.format('Unsupported operation `%s`', operation));
+        process.exit(1);
     }
   }
-  catch (Error) {
-    console.log(Error.message);
+  catch (err) {
+    console.error(err.message);
     process.exit(1);
   }
 });
